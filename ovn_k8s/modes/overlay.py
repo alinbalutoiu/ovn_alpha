@@ -291,6 +291,10 @@ class OvnNB(object):
     def create_logical_port(self, event):
         data = event.metadata
         logical_switch = data['spec']['nodeName']
+        is_windows = data['spec'].get('nodeSelector', None)
+        if is_windows is not None:
+            is_windows = is_windows.values()[0].lower() == u'windows'
+
         pod_name = data['metadata']['name']
         namespace = data['metadata']['namespace']
         logical_port = "%s_%s" % (namespace, pod_name)
@@ -305,12 +309,16 @@ class OvnNB(object):
             return
 
         try:
-            ovn_nbctl("--wait=sb", "--", "--may-exist", "lsp-add",
-                      logical_switch, logical_port, "--", "lsp-set-addresses",
-                      logical_port, "dynamic", "--", "set",
-                      "logical_switch_port", logical_port,
-                      "external-ids:namespace=" + namespace,
-                      "external-ids:pod=true")
+            if not is_windows:
+                ovn_nbctl("--wait=sb", "--", "--may-exist", "lsp-add",
+                          logical_switch, logical_port, "--", "lsp-set-addresses",
+                          logical_port, "dynamic", "--", "set",
+                          "logical_switch_port", logical_port,
+                          "external-ids:namespace=" + namespace,
+                          "external-ids:pod=true")
+            else:
+                # Not needed for Windows
+                return
         except Exception as e:
             vlog.err("_create_logical_port: lsp-add (%s)" % (str(e)))
             return
@@ -385,6 +393,11 @@ class OvnNB(object):
 
         try:
             ovn_nbctl("--if-exists", "lsp-del", logical_port)
+        except Exception:
+            vlog.exception("failure in delete_logical_port: lsp-del")
+            return
+        try:
+            ovn_nbctl("--if-exists", "lsp-del", pod_name)
         except Exception:
             vlog.exception("failure in delete_logical_port: lsp-del")
             return
