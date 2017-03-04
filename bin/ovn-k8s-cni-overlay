@@ -99,11 +99,11 @@ def setup_interface(container_id, cni_netns, cni_ifname,
         # Configure veth_inside: set name, mtu, mac address, ip, and bring up
         vlog.dbg("Configuring and bringing up veth inner interface %s. "
                  "New name:'%s',MAC address:'%s', MTU:'%s', IP:%s" %
-                 (veth_inside, cni_ifname, mac_address, 1400, ip_address))
+                 (veth_inside, cni_ifname, mac_address, 1300, ip_address))
         with ns_ipdb.interfaces[veth_inside] as veth_inside_iface:
             veth_inside_iface.ifname = cni_ifname
             veth_inside_iface.address = mac_address
-            veth_inside_iface.mtu = 1400
+            veth_inside_iface.mtu = 1300
             veth_inside_iface.add_ip(ip_address)
             veth_inside_iface.up()
 
