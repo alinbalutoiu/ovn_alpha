@@ -386,8 +386,16 @@ class OvnNB(object):
                      "unable to delete logical port" % data)
             return
 
-        annotations = data['metadata']['annotations']
-        ip_address = self._get_ip_address_from_annotations(annotations)
+        try:
+            annotations = data['metadata']['annotations']
+            ip_address = self._get_ip_address_from_annotations(annotations)
+        except Exception:
+            vlog.info("failed to retrieve annotations, fetching ip from ovn")
+            mac_ip = ovn_nbctl("get", "logical_switch_port",
+                               "%s" % logical_port, "dynamic_addresses")
+            ip_address = mac_ip.split(" ")
+            if len(ip_address):
+                ip_address = ip_address[1]
         if ip_address:
             self._delete_k8s_l4_port_name_cache(data, ip_address)
 
