@@ -390,22 +390,20 @@ class OvnNB(object):
             annotations = data['metadata']['annotations']
             ip_address = self._get_ip_address_from_annotations(annotations)
         except Exception:
-            vlog.info("failed to retrieve annotations, fetching ip from ovn")
-            mac_ip = ovn_nbctl("get", "logical_switch_port",
-                               "%s" % logical_port, "dynamic_addresses")
-            ip_address = mac_ip.split(" ")
-            if len(ip_address):
-                ip_address = ip_address[1]
+            vlog.info("failed to retrieve annotations")
+            # Windows does not have the pod annotations set, ignore the error.
+            # Try to delete the port if it still exists at this point then
+            # return. No need to delete from cache.
+            try:
+                ovn_nbctl("--if-exists", "lsp-del", pod_name)
+            except Exception:
+                vlog.exception("failure in delete_logical_port: lsp-del")
+            return
         if ip_address:
             self._delete_k8s_l4_port_name_cache(data, ip_address)
 
         try:
             ovn_nbctl("--if-exists", "lsp-del", logical_port)
-        except Exception:
-            vlog.exception("failure in delete_logical_port: lsp-del")
-            return
-        try:
-            ovn_nbctl("--if-exists", "lsp-del", pod_name)
         except Exception:
             vlog.exception("failure in delete_logical_port: lsp-del")
             return
