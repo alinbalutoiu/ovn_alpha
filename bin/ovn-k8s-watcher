@@ -22,7 +22,8 @@ import ovs.dirs
 import ovs.util
 import ovs.daemon
 import ovs.vlog
-from ovn_k8s.common import config
+from ovn_k8s.common import config as common_config
+from ovn_k8s import config
 from ovn_k8s.watcher import watcher
 
 eventlet.monkey_patch()
@@ -32,7 +33,7 @@ vlog = ovs.vlog.Vlog("ovn-k8s-watcher")
 
 def ovn_init_k8s(args):
     if args.overlay:
-        config.ovn_init_overlay()
+        common_config.ovn_init_overlay()
     elif args.underlay:
         sys.exit("Underlay mode not implemented")
     elif args.openstack:
@@ -53,9 +54,15 @@ def main():
 
     # Since our instructions asks to do a 'pip install ovs',
     # for python libraries, we do not know how OVS core
-    # utilities have been installed.  So we try to do a best
-    # guess.
-    if os.path.isfile("/usr/bin/ovs-vsctl"):
+    # utilities have been installed.
+    # We first try to see if the user set the variables in the config file.
+    # Otherwise we try to do a best guess.
+    rundir = config.get_option('rundir')
+    logdir = config.get_option('logdir')
+    if rundir and logdir:
+        ovs.dirs.RUNDIR = rundir
+        ovs.dirs.LOGDIR = logdir
+    elif os.path.isfile("/usr/bin/ovs-vsctl"):
         ovs.dirs.RUNDIR = "/var/run/openvswitch"
         ovs.dirs.LOGDIR = "/var/log/openvswitch"
     else:

@@ -17,8 +17,9 @@ import sys
 from ovn_k8s.common.util import ovs_vsctl
 from ovn_k8s.common.util import ovn_nbctl
 from ovn_k8s.common import variables
+from ovn_k8s import config
 
-UNIX_SOCKET = "/var/run/openvswitch/ovnnb_db.sock"
+UNIX_SOCKET = config.get_option('unix_socket')
 
 
 def ovn_init_overlay():
@@ -57,5 +58,3 @@ def ovn_init_overlay():
     if not K8S_CLUSTER_LB_UDP:
         sys.exit("K8S_CLUSTER_LB_UDP not set")
     variables.K8S_CLUSTER_LB_UDP = K8S_CLUSTER_LB_UDP
-
-    variables.OVN_MODE = "overlay"
