@@ -387,6 +387,19 @@ class OvnNB(object):
             return
 
         try:
+            is_windows = data['spec'].get('nodeSelector', None)
+            if is_windows is not None:
+                is_windows = is_windows.values()[0].lower() == u'windows'
+        except Exception:
+            vlog.exception("failed to retrieve spec from event")
+        if is_windows:
+            try:
+                ovn_nbctl("--if-exists", "lsp-del", pod_name)
+            except Exception:
+                vlog.exception("failure in delete_logical_port: lsp-del")
+            return
+
+        try:
             annotations = data['metadata']['annotations']
             ip_address = self._get_ip_address_from_annotations(annotations)
         except Exception:
@@ -394,11 +407,10 @@ class OvnNB(object):
             # Windows does not have the pod annotations set, ignore the error.
             # Try to delete the port if it still exists at this point then
             # return. No need to delete from cache.
-            try:
-                ovn_nbctl("--if-exists", "lsp-del", pod_name)
-            except Exception:
-                vlog.exception("failure in delete_logical_port: lsp-del")
-            return
+        try:
+            ovn_nbctl("--if-exists", "lsp-del", pod_name)
+        except Exception:
+            vlog.exception("failure in delete_logical_port: lsp-del")
         if ip_address:
             self._delete_k8s_l4_port_name_cache(data, ip_address)
 
